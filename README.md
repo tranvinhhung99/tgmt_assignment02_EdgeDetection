@@ -8,7 +8,7 @@
 
 ## Hướng dẫn compile bằng CMake
 
-Step0 (need when run unit test): we need to clone `googletest` at [link](https://github.com/google/googletest/) to `lib/` 
+**Step 0** (need when run unit test): we need to clone `googletest` at [link](https://github.com/google/googletest/) to `lib/` 
 to run unit test in debug mode.
 
 Your directory tree should look like this:
@@ -21,7 +21,7 @@ Your directory tree should look like this:
 
 ```
  
-Step1: Recompile source code.
+**Step 1**: Recompile source code.
 ```
 # Create build directory
 mkdir build && cd build
@@ -33,7 +33,7 @@ cmake -DCMAKE_BUILD_TYPE=<value> ..
 make 
 ```
 
-Step2: Run binary file:
+**Step 2**: Run binary file:
 
 ```
 # In build director
