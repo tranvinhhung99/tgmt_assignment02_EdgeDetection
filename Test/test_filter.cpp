@@ -36,6 +36,23 @@ TEST(_2DFilterTest, emptyInputTest){
   testEmptyArr();
 }
 
+TEST(_2DFilterTest, knownInput_uint8){
+  int src_data[9] = {3, 0, 2, 4, 0, 3, 1, 0, 1};
+  cv::Mat src(3, 3, CV_8UC1, &src_data);
+  int kernel_data[9] = {1, 1, 1, 0, 0, 0, 1, 0, 1};
+  cv::Mat kernel(3, 3, CV_8UC1, &kernel_data);
+
+  cv::Mat my_output;
+  utils::applyFilter(src, my_output, -1, kernel);
+
+  cv::Mat cv_output;
+  cv::filter2D(src, cv_output, -1, kernel);
+
+  test_case::testSameMatrix(my_output, cv_output);
+
+}
+
+
 TEST(_2DFilterTest, randomTest_uint8){
   cv::Mat src;
   test_case::generateRandomMatrix(src, 30, 30);
@@ -50,6 +67,21 @@ TEST(_2DFilterTest, randomTest_uint8){
 
   test_case::testSameMatrix(my_output, cv_output);
 
+}
+
+TEST(_2DFilterTest, knownKernel_uint8){
+  cv::Mat src;
+  test_case::generateRandomMatrix(src, 30, 30);
+  int kernel_data[9] = {1, 1, 1, 0, 0, 0, 1, 0, 1};
+  cv::Mat kernel(3, 3, CV_8UC1, &kernel_data);
+
+  cv::Mat my_output;
+  utils::applyFilter(src, my_output, -1, kernel);
+
+  cv::Mat cv_output;
+  cv::filter2D(src, cv_output, -1, kernel);
+
+  test_case::testSameMatrix(my_output, cv_output);
 
 }
 
