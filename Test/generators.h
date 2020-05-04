@@ -12,9 +12,10 @@
 #include <opencv2/core.hpp>
 
 namespace test_case{
-  // Generate random matrix with known size and depth
-  void generateRandomMatrix(cv::OutputArray, int num_row, int num_col, int ddepth);
-  void generateRandomMatrix(cv::OutputArray, cv::Size, int ddepth);
+  /* Generate random matrix with known size and depth
+   */ 
+  void generateRandomMatrix(cv::OutputArray, int num_row, int num_col, int type=CV_8UC1);
+  void generateRandomMatrix(cv::OutputArray, cv::Size, int type=CV_8UC1);
 
 
 }

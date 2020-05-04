@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <opencv2/core.hpp>
 
   
 // Checking if two matrix is the same size
@@ -24,7 +25,13 @@ void test_case::testIsFilledWithConst(cv::InputArray input, const uchar value){
 }
 
 void test_case::testSameMatrix(cv::InputArray mat1, cv::InputArray mat2){
-  bool eq = cv::countNonZero(mat1 != mat2) == 0;
+  bool eq = cv::countNonZero(mat1.getMat() != mat2.getMat()) == 0;
+  if(!eq){
+    std::cout << "Not equal" << std::endl;
+    std::cout << mat1.getMat() << std::endl;
+    std::cout << mat2.getMat() << std::endl;
+  }
+
   assert(eq);
 }
 

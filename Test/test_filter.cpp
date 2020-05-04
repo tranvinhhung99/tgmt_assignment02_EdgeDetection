@@ -1,8 +1,10 @@
 #include "utils.h"
 #include "test_utils.h"
+#include "generators.h"
 
 #include "gtest/gtest.h"
 #include <assert.h>
+#include <opencv2/imgproc.hpp>
 
 
 void fillArray(int *a, int length, int fill_value){
@@ -34,5 +36,20 @@ TEST(_2DFilterTest, emptyInputTest){
   testEmptyArr();
 }
 
-TEST(_2DFilterTest, randomTest){
+TEST(_2DFilterTest, randomTest_uint8){
+  cv::Mat src;
+  test_case::generateRandomMatrix(src, 30, 30);
+  cv::Mat kernel;
+  test_case::generateRandomMatrix(kernel, 3, 3);
+
+  cv::Mat my_output;
+  utils::applyFilter(src, my_output, -1, kernel);
+
+  cv::Mat cv_output;
+  cv::filter2D(src, cv_output, -1, kernel);
+
+  test_case::testSameMatrix(my_output, cv_output);
+
+
+}
 
