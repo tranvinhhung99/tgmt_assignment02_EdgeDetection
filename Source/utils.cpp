@@ -1,46 +1,36 @@
 #include "utils.h"
 
-
-//-----------------------------------------------------
-// Warper for greyscale image section
-//----------------------------------------------------
-inline int getValueFromMat(cv::InputArray input, int x, int y){
+//--------------------------------------------------------------------
+// Template helper function section
+//--------------------------------------------------------------------
+template <typename T>
+inline T getValueFromMat_(cv::InputArray input, int x, int y, int c){
   if (x < 0 || x >= input.cols())
     return 0;
   if (y < 0 || y >= input.rows())
     return 0;
 
-  return input.getMat().at<uchar>(y, x);
+  return *(input.getMat().ptr<T>(y, x, c));
 }
 
 
-inline long applyMask(cv::InputArray src, cv::InputArray kernel, cv::Point anchor, int x, int y){
-  long value = 0;
+template <typename T>
+inline long long applyMask_INT(cv::InputArray src, cv::InputArray kernel, cv::Point anchor, int x, int y, int c){
+  long long value = 0;
   for (int x_k = 0; x_k < kernel.cols(); x_k++)
     for (int y_k = 0; y_k < kernel.rows(); y_k++)
-        value += getValueFromMat(kernel, x_k, y_k)
-          * getValueFromMat(src, x + x_k - anchor.x, y + y_k - anchor.y);
+        value += getValueFromMat_<T>(kernel, x_k, y_k, 0)
+          * getValueFromMat_<T>(src, x + x_k - anchor.x, y + y_k - anchor.y, c);
   return value;
 }
 
-//-----------------------------------------------------
-// Warper for color image section
-//----------------------------------------------------
-inline int getValueFromMat(cv::InputArray input, int x, int y, int c){
-  if (x < 0 || x >= input.cols())
-    return 0;
-  if (y < 0 || y >= input.rows())
-    return 0;
-
-  return input.getMat().at<cv::Vec3b>(y, x)[c];
-}
-
-inline long applyMask(cv::InputArray src, cv::InputArray kernel, cv::Point anchor, int x, int y, int c){
-  long value = 0;
+template <typename T>
+inline double applyMask_FLOAT(cv::InputArray src, cv::InputArray kernel, cv::Point anchor, int x, int y, int c){
+  double value = 0;
   for (int x_k = 0; x_k < kernel.cols(); x_k++)
     for (int y_k = 0; y_k < kernel.rows(); y_k++)
-        value += getValueFromMat(kernel, x_k, y_k, c)
-          * getValueFromMat(src, x + x_k - anchor.x, y + y_k - anchor.y, c);
+        value += getValueFromMat_<T>(kernel, x_k, y_k, 0)
+          * getValueFromMat_<T>(src, x + x_k - anchor.x, y + y_k - anchor.y, c);
   return value;
 }
 
@@ -71,25 +61,13 @@ void utils::applyFilter(cv::InputArray src,
   // for each pixel
   for (int y = 0; y < src.rows(); y++)
     for (int x = 0; x < src.cols(); x++)
-      /* Greyscale different from colors
-       * image due to value type.
-       * 
-       * Greyscale use uchar.
-       * Color use Vec3b.
-       */
-      if (src.channels() == 1){ // Greyscale
-        long value = applyMask(src, kernel, anchor, x, y);
-        
-        // Casting for no overflow
-        dstMat.at<uchar>(y, x) = cv::saturate_cast<uchar>(value);
-      }
-      else if (src.channels() == 3){
-        for(int c = 0; c < 3; c++){
-          long value = applyMask(src, kernel, anchor, x, y, c);
+        for(int c = 0; c < src.channels(); c++){
+          long value; 
+
+          value = applyMask_INT<uchar>(src, kernel, anchor, x, y, c);
 
           // Casting for no overflow
-          dstMat.at<cv::Vec3b>(y, x)[c] = cv::saturate_cast<uchar>(value);
+          *dstMat.ptr<uchar>(y, x, c) = cv::saturate_cast<uchar>(value);
         } 
-      }
 }
 
