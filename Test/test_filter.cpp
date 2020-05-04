@@ -7,6 +7,7 @@
 #include <opencv2/imgproc.hpp>
 
 
+const int BORDER_CONSTANT = 0;
 void fillArray(int *a, int length, int fill_value){
   for (int i = 0; i < length; i++)
     a[i] = fill_value;
@@ -46,7 +47,7 @@ TEST(_2DFilterTest, knownInput_uint8){
   utils::applyFilter(src, my_output, -1, kernel);
 
   cv::Mat cv_output;
-  cv::filter2D(src, cv_output, -1, kernel);
+  cv::filter2D(src, cv_output, -1, kernel, cv::Point(-1, -1), 0, BORDER_CONSTANT);
 
   test_case::testSameMatrix(my_output, cv_output);
 
@@ -63,7 +64,7 @@ TEST(_2DFilterTest, randomTest_uint8){
   utils::applyFilter(src, my_output, -1, kernel);
 
   cv::Mat cv_output;
-  cv::filter2D(src, cv_output, -1, kernel);
+  cv::filter2D(src, cv_output, -1, kernel, cv::Point(-1, -1), 0, BORDER_CONSTANT);
 
   test_case::testSameMatrix(my_output, cv_output);
 
@@ -79,7 +80,7 @@ TEST(_2DFilterTest, knownKernel_uint8){
   utils::applyFilter(src, my_output, -1, kernel);
 
   cv::Mat cv_output;
-  cv::filter2D(src, cv_output, -1, kernel);
+  cv::filter2D(src, cv_output, -1, kernel, cv::Point(-1, -1), 0, BORDER_CONSTANT);
 
   test_case::testSameMatrix(my_output, cv_output);
 
