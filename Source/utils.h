@@ -14,6 +14,7 @@ namespace utils{
    * @param dst: Output destination
    * @param ddepth: Destination depth. -1 for same as src
    * @param kernel
+   * @parma anchor: 2D Point. Default use kernel center
    *
    */
   void applyFilter(cv::InputArray src, 
