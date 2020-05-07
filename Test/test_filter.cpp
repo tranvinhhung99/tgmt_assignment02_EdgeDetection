@@ -3,8 +3,9 @@
 #include "generators.h"
 
 #include "gtest/gtest.h"
-#include <assert.h>
+#include <assert.h> 
 #include <opencv2/imgproc.hpp>
+#include <iostream>
 
 
 const int BORDER_CONSTANT = 0;
@@ -86,3 +87,47 @@ TEST(_2DFilterTest, knownKernel_uint8){
 
 }
 
+void printArray(cv::Mat src){
+  int nl = src.rows;
+  int ne = src.cols * src.channels();
+
+  for(int i = 0; i < nl; i++){
+    uchar* data = src.ptr<uchar>(i);
+    for(int j = 0; j < ne; j++)
+      std::cerr << int(data[j]) << " ";
+    std::cerr << std::endl;
+  }
+      
+}
+
+TEST(_2DFilterTest, randomTest_uint8_c3){
+  cv::Mat src;
+  test_case::generateRandomMatrix(src, 5, 5, CV_8UC3);
+  cv::Mat kernel;
+  test_case::generateRandomMatrix(kernel, 3, 3);
+  
+  cv::Mat my_output;
+  utils::applyFilter(src, my_output, -1, kernel);
+
+  cv::Mat cv_output;
+  cv::filter2D(src, cv_output, -1, kernel, cv::Point(-1, -1), 0, BORDER_CONSTANT);
+
+
+  test_case::testSameMatrix(my_output, cv_output);
+}
+
+TEST(_2DFilterTest, randomTest_uint8_int8){
+  cv::Mat src;
+  test_case::generateRandomMatrix(src, 5, 5, CV_16SC1);
+  cv::Mat kernel;
+  test_case::generateRandomMatrix(kernel, 3, 3, CV_16SC1);
+  
+  cv::Mat my_output;
+  utils::applyFilter(src, my_output, 3, kernel);
+
+  cv::Mat cv_output;
+  cv::filter2D(src, cv_output, -1, kernel, cv::Point(-1, -1), 0, BORDER_CONSTANT);
+
+
+  test_case::testSameMatrix(my_output, cv_output);
+}
