@@ -25,7 +25,21 @@ void test_case::testIsFilledWithConst(cv::InputArray input, const uchar value){
 }
 
 void test_case::testSameMatrix(cv::InputArray mat1, cv::InputArray mat2){
-  bool eq = cv::countNonZero(mat1.getMat() != mat2.getMat()) == 0;
+  bool eq; 
+  int mat1_depth = mat1.depth();
+  int mat2_depth = mat2.depth();
+
+  // Convert depth before compare
+  if ((mat1_depth % 2 == mat2_depth % 2) && (mat1_depth != mat2_depth)){
+    int max_depth = mat1_depth > mat2_depth ? mat1_depth : mat2_depth;
+    cv::Mat _mat1 = mat1.getMat();
+    _mat1.convertTo(_mat1, max_depth);
+    cv::Mat _mat2 = mat2.getMat();
+    _mat2.convertTo(_mat2, max_depth);
+    eq = cv::countNonZero(_mat1 != _mat2) == 0;
+  }
+  else
+    eq = cv::countNonZero(mat1.getMat() != mat2.getMat()) == 0;
   if(!eq){
     std::cout << "Not equal" << std::endl;
     std::cout << mat1.getMat() << std::endl;

@@ -2,8 +2,9 @@
 
 #include <opencv2/core/traits.hpp>
 
-void test_case::generateRandomMatrix(cv::OutputArray dest, int num_row, int num_col, int ddepth){
-  dest.create(num_row, num_col, ddepth);
+void test_case::generateRandomMatrix(cv::OutputArray dest, int num_row, int num_col, int type){
+  dest.create(num_row, num_col, type);
+  int ddepth = dest.depth();
 
   // Random based on depth
   switch(ddepth){
