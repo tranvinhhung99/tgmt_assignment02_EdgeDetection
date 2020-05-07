@@ -12,7 +12,10 @@ namespace utils{
    *
    * @param src: Source input image
    * @param dst: Output destination
-   * @param ddepth: Destination depth. -1 for same as src
+   * @param ddepth: Destination depth. -1 for same as src.
+   * 
+   * Currently support: CV_8U, CV_8S, CV_16U, CV_16S
+   *
    * @param kernel
    * @parma anchor: 2D Point. Default use kernel center
    *
