@@ -14,6 +14,18 @@ void fillArray(int *a, int length, int fill_value){
     a[i] = fill_value;
 }
 
+void printArray(cv::Mat src){
+  int nl = src.rows;
+  int ne = src.cols * src.channels();
+
+  for(int i = 0; i < nl; i++){
+    uchar* data = src.ptr<uchar>(i);
+    for(int j = 0; j < ne; j++)
+      std::cerr << int(data[j]) << " ";
+    std::cerr << std::endl;
+  }
+      
+}
   
 void testEmptyArr(){
   int input_data[9];
@@ -34,6 +46,7 @@ void testEmptyArr(){
 
 }
 
+// 2D Filter test case
 TEST(_2DFilterTest, emptyInputTest){
   testEmptyArr();
 }
@@ -87,18 +100,6 @@ TEST(_2DFilterTest, knownKernel_uint8){
 
 }
 
-void printArray(cv::Mat src){
-  int nl = src.rows;
-  int ne = src.cols * src.channels();
-
-  for(int i = 0; i < nl; i++){
-    uchar* data = src.ptr<uchar>(i);
-    for(int j = 0; j < ne; j++)
-      std::cerr << int(data[j]) << " ";
-    std::cerr << std::endl;
-  }
-      
-}
 
 TEST(_2DFilterTest, randomTest_uint8_c3){
   cv::Mat src;
@@ -132,6 +133,7 @@ TEST(_2DFilterTest, randomTest_uint8_int8){
   test_case::testSameMatrix(my_output, cv_output);
 }
 
+// SOBEL TEST CASE
 TEST(Sobel, createFilterX){
   cv::Mat kernel;
   utils::createSobelFilter(kernel, 0);
@@ -170,3 +172,23 @@ TEST(Sobel, detectEdge){
 
 }
 
+// Gaussian test case
+TEST(Gaussian, outputDepth){
+  cv::Mat random_mat;
+  test_case::generateRandomMatrix(random_mat, 10, 10, CV_8U);
+
+  cv::Mat out0;
+  utils::applyGaussianFilter(random_mat, out0, 5, -1, CV_32F);
+  CV_Assert(out0.depth() == CV_32F);
+
+  cv::Mat out1;
+  utils::applyGaussianFilter(random_mat, out1, 3);
+  CV_Assert(out1.depth() == CV_8U);
+
+  cv::Mat out2;
+  utils::applyGaussianFilter(random_mat, out2, 5, -1, CV_16U);
+  CV_Assert(out2.depth() == CV_16U);
+
+
+
+}

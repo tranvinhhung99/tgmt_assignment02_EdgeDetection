@@ -148,6 +148,149 @@ void applyMaskIntWarper(cv::Mat dstMat, cv::InputArray src,
       break;
   }
 }
+/* Apply float warper (Big switch case function) */
+void applyMaskFloatWarper(cv::Mat dstMat, cv::InputArray src, 
+    cv::InputArray kernel, int ddepth, 
+    int y, int x, int c, 
+    cv::Point anchor){
+  int kernel_depth = kernel.depth();
+  int src_depth = src.depth();
+  double value; 
+  int num_channels = dstMat.channels();
+  switch(kernel_depth){
+    case 0:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<uchar, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<uchar, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<uchar, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<uchar, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+
+    case 1:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<char, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<char, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<char, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<char, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+
+    case 2:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<unsigned short, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<unsigned short, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<unsigned short, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<unsigned short, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+
+    case 3:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<short, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<short, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<short, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<short, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+    case CV_32F:
+      switch(src_depth){
+        case 0:
+          value = applyMask_FLOAT<float, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_FLOAT<float, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_FLOAT<float, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_FLOAT<float, short>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_32F:
+          value = applyMask_FLOAT<float, float>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_64F:
+          value = applyMask_FLOAT<float, double>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+     case CV_64F:
+      switch(src_depth){
+        case 0:
+          value = applyMask_FLOAT<double, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_FLOAT<double, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_FLOAT<double, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_FLOAT<double, short>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_32F:
+          value = applyMask_FLOAT<double, float>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_64F:
+          value = applyMask_FLOAT<double, double>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+  }
+  // Casting for no overflow
+  switch(ddepth){
+    case 0:
+      dstMat.at<uchar>(y, x*num_channels + c) = cv::saturate_cast<uchar>(value);
+      break;
+    case 1:
+      dstMat.at<char>(y, x*num_channels + c) = cv::saturate_cast<char>(value);
+      break;
+    case 2:
+      dstMat.at<unsigned short>(y, x*num_channels + c) = cv::saturate_cast<unsigned short>(value);
+      break;
+    case 3:
+      dstMat.at<short>(y, x*num_channels + c) = cv::saturate_cast<short>(value);
+      break;
+    case CV_32F:
+      dstMat.at<float>(y, x*num_channels + c) = cv::saturate_cast<float>(value);
+      break;
+    case CV_64F:
+      dstMat.at<double>(y, x*num_channels + c) = value;
+      break;
+  }
+}
 
 //--------------------------------------------------
 // Main function
@@ -183,8 +326,11 @@ void utils::applyFilter(cv::InputArray src,
   for (int y = 0; y < src.rows(); y++)
     for (int x = 0; x < src.cols(); x++)
         for(int c = 0; c < src.channels(); c++){
-          if(ddepth < 4)
+          if(ddepth < 4 && kernel_depth < 4)
             applyMaskIntWarper(dstMat, src, kernel, 
+                ddepth, y, x, c, anchor);
+          else
+            applyMaskFloatWarper(dstMat, src, kernel,
                 ddepth, y, x, c, anchor);
         } 
 }
@@ -249,3 +395,60 @@ void utils::detectBySobel(cv::InputArray src, cv::OutputArray dst, cv::OutputArr
   getL2(grad_x, grad_y, dst);
 }
 
+//------------------------------------
+// Gaussian filter
+//------------------------------------
+double gaussFunction(int x, int y, double sigma, int x0, int y0){
+  double temp_x = (x - x0) / sigma;
+  temp_x = (temp_x / 2) * temp_x;
+
+  double temp_y = (y - y0) / sigma;
+  temp_y = (temp_y / 2) * temp_y;
+
+  return exp(-temp_x - temp_y);
+
+}
+void createGaussianFilter(cv::OutputArray kernel, uchar ksize, int type=CV_32F, double sigma=-1);
+void createGaussianFilter(cv::OutputArray kernel, uchar ksize, int type, double sigma){
+  // get default value of sigma
+  if(sigma <= 0)
+    sigma = 0.3*((ksize - 1) * 0.5 - 1) + 0.8;
+
+  // allocate memory if needed
+  kernel.create(ksize, ksize, type);
+  cv::Mat kernel_mat = kernel.getMat();
+
+  // Get center
+  int y0, x0;
+  x0 = y0 = ksize / 2;
+
+  // Get value
+  if(type == CV_32F)
+    for(int y = 0; y < kernel.rows(); y++)
+      for(int x = 0; x < kernel.cols(); x++){
+        kernel_mat.at<float>(y, x) = gaussFunction(x, y, sigma, x0, y0);
+      }
+  else if(type == CV_64F)
+    for(int y = 0; y < kernel.rows(); y++)
+      for(int x = 0; x < kernel.cols(); x++){
+        kernel_mat.at<double>(y, x) = gaussFunction(x, y, sigma, x0, y0);
+      }
+}
+
+void utils::applyGaussianFilter(cv::InputArray src,
+    cv::OutputArray dst,
+    uchar ksize,
+    double sigma,
+    int ddepth
+){
+
+  cv::Mat kernel;
+  createGaussianFilter(kernel, ksize, CV_32F, sigma);
+
+  cv::Mat temp_dst;
+  applyFilter(src, temp_dst, CV_32F, kernel);
+
+  if(ddepth != CV_32F)
+    temp_dst.convertTo(temp_dst, ddepth);
+  dst.assign(temp_dst);
+}

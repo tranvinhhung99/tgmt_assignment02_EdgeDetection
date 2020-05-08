@@ -49,14 +49,21 @@ namespace utils{
 
   /* Apply Gaussian Filter from parameters.
    *
-   * @param src: Input image. Must be CV_32F depth
+   * @param src: Input image. 
    * @param dst: Output image
-   * @param kernel_size: Kernel size of Gaussian Filter. Must be odd number
+   * @param ksize: Kernel size of Gaussian Filter. Must be odd number
+   * @param sigma: Sigma for x and y. If not positive, use default value as:
+   *
+   * sigma = 0.3*((ksize - 1) * 0.5 - 1) + 0.8
+   *
+   * @param ddepth: Depth of destination image
    *
    */ 
   void applyGaussianFilter(cv::InputArray src,
       cv::OutputArray dst,
-      unsigned char kernel_size
+      uchar ksize,
+      double sigma=-1,
+      int ddepth=CV_8U
   );
 
 
