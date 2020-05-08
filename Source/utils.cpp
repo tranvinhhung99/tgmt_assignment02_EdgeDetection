@@ -1,5 +1,9 @@
 #include "utils.h"
+
 #include <iostream>
+#include <array>
+
+#include <math.h>
 
 //--------------------------------------------------------------------
 // Template helper function section
@@ -37,6 +41,20 @@ inline double applyMask_FLOAT(cv::InputArray src, cv::InputArray kernel, cv::Poi
 }
 
 typedef long long (*pApplyMaskInt) (cv::InputArray src, cv::InputArray kernel, cv::Point anchor, int x, int y, int c);
+
+/* Get L2 value from short Grad_X and short Grad_Y to Short dst */
+void getL2(cv::InputArray grad_x, cv::InputArray grad_y, cv::OutputArray dst){
+  dst.createSameSize(grad_x, CV_16S);
+  for(int y = 0; y < grad_x.rows(); y++)
+    for(int x = 0; x < grad_x.cols(); x++){
+      long grad_x_value = grad_x.getMat().at<short>(y, x);
+      long grad_y_value = grad_y.getMat().at<short>(y, x);
+
+      double square_l2 = grad_x_value * grad_x_value + grad_y_value * grad_y_value;
+      
+      dst.getMat().at<short>(y, x) = cv::saturate_cast<short>(sqrt(square_l2));
+    }
+}
 
 //--------------------------------------------------
 // Main function
@@ -158,4 +176,63 @@ void utils::applyFilter(cv::InputArray src,
           }
         } 
 }
+
+void utils::createSobelFilter(cv::OutputArray kernel, uchar angle, int depth){
+  kernel.create(3, 3, depth);
+  std::array<int, 9> data;
+  switch(angle){
+    case 90: //grad_y
+      data = {-1, -2, -1,
+              0, 0, 0,
+              1, 2, 1};
+      break;
+    case 0: //grad_x
+      data = {-1, 0, 1,
+              -2, 0, 2,
+              -1, 0, 1};
+      break;
+    case 45:
+      data = {-2, -1, 0,
+              -1, 0,  1,
+               0, 1,  2};
+      break;
+    case 135:
+      data = { 0, -1, -2,
+               1,  0, -1,
+               2,  1,  0};
+      break;
+  }
+  for(int y = 0; y < kernel.rows(); y++)
+    for(int x = 0; x < kernel.cols(); x++)
+      switch(depth){
+        case CV_8S:
+          kernel.getMat().at<char>(y, x) = data[y*3 + x];
+          break;
+        case CV_32F:
+          kernel.getMat().at<float>(y, x) = data[y*3 + x];
+          break;
+        case CV_64F:
+          kernel.getMat().at<double>(y, x) = data[y*3 + x];
+          break;
+      }
+}
+
+void utils::detectBySobel(cv::InputArray src, cv::OutputArray dst, cv::OutputArray grad_x, cv::OutputArray grad_y){
+  CV_Assert(src.type() == CV_8U);
+  dst.createSameSize(src, CV_16S);
+
+  // Create filter
+  cv::Mat kernel_grad_x, kernel_grad_y;
+  createSobelFilter(kernel_grad_x, 0);
+  createSobelFilter(kernel_grad_y, 90);
+
+  // Apply filter
+  //cv::Mat grad_x, grad_y;
+  applyFilter(src, grad_x, CV_16S, kernel_grad_x);
+  applyFilter(src, grad_y, CV_16S, kernel_grad_y);
+
+  getL2(grad_x, grad_y, dst);
+}
+
+  
 

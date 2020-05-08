@@ -131,3 +131,42 @@ TEST(_2DFilterTest, randomTest_uint8_int8){
 
   test_case::testSameMatrix(my_output, cv_output);
 }
+
+TEST(Sobel, createFilterX){
+  cv::Mat kernel;
+  utils::createSobelFilter(kernel, 0);
+
+  char data[9] = {-1, 0, 1,
+                   -2, 0, 2,
+                   -1, 0, 1}; 
+  cv::Mat ans(3, 3, CV_8S, &data);
+  test_case::testSameMatrix(kernel, ans);
+}
+
+TEST(Sobel, createFilterY){
+  cv::Mat kernel;
+  utils::createSobelFilter(kernel, 90);
+
+  char data[9] = {-1, -2, -1,
+                    0,  0,  0,
+                    1,  2,  1}; 
+  cv::Mat ans(3, 3, CV_8S, &data);
+  test_case::testSameMatrix(kernel, ans);
+}
+
+TEST(Sobel, detectEdge){
+  cv::Mat random_mat;
+  test_case::generateRandomMatrix(random_mat, 10, 10, CV_8U);
+
+  cv::Mat my_grad_x, my_grad_y, my_edge;
+  utils::detectBySobel(random_mat, my_edge, my_grad_x, my_grad_y);
+
+  cv::Mat cv_grad_x, cv_grad_y;
+  cv::Sobel(random_mat, cv_grad_x, CV_16S, 1, 0, 3, 1, 0, BORDER_CONSTANT);
+  cv::Sobel(random_mat, cv_grad_y, CV_16S, 0, 1, 3, 1, 0, BORDER_CONSTANT);
+
+  test_case::testSameMatrix(cv_grad_x, my_grad_x);
+  test_case::testSameMatrix(cv_grad_y, my_grad_y);
+
+}
+
