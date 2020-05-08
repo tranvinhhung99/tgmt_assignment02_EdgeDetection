@@ -40,7 +40,6 @@ inline double applyMask_FLOAT(cv::InputArray src, cv::InputArray kernel, cv::Poi
   return value;
 }
 
-typedef long long (*pApplyMaskInt) (cv::InputArray src, cv::InputArray kernel, cv::Point anchor, int x, int y, int c);
 
 /* Get L2 value from short Grad_X and short Grad_Y to Short dst */
 void getL2(cv::InputArray grad_x, cv::InputArray grad_y, cv::OutputArray dst){
@@ -54,6 +53,100 @@ void getL2(cv::InputArray grad_x, cv::InputArray grad_y, cv::OutputArray dst){
       
       dst.getMat().at<short>(y, x) = cv::saturate_cast<short>(sqrt(square_l2));
     }
+}
+
+/* Big switch case function to handle multiple depth */
+void applyMaskIntWarper(cv::Mat dstMat, cv::InputArray src, 
+    cv::InputArray kernel, int ddepth, 
+    int y, int x, int c, 
+    cv::Point anchor){
+  int kernel_depth = kernel.depth();
+  int src_depth = src.depth();
+  long value; 
+  int num_channels = dstMat.channels();
+  switch(kernel_depth){
+    case 0:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<uchar, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<uchar, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<uchar, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<uchar, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+
+    case 1:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<char, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<char, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<char, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<char, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+
+    case 2:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<unsigned short, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<unsigned short, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<unsigned short, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<unsigned short, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+
+    case 3:
+      switch(src_depth){
+        case 0:
+          value = applyMask_INT<short, uchar>(src, kernel, anchor, x, y, c);
+          break;
+        case 1:
+          value = applyMask_INT<short, char>(src, kernel, anchor, x, y, c);
+          break;
+        case 2:
+          value = applyMask_INT<short, unsigned short>(src, kernel, anchor, x, y, c);
+          break;
+        case 3:
+          value = applyMask_INT<short, short>(src, kernel, anchor, x, y, c);
+          break;
+        }
+        break;
+  }
+  // Casting for no overflow
+  switch(ddepth){
+    case 0:
+      dstMat.at<uchar>(y, x*num_channels + c) = cv::saturate_cast<uchar>(value);
+      break;
+    case 1:
+      dstMat.at<char>(y, x*num_channels + c) = cv::saturate_cast<char>(value);
+      break;
+    case 2:
+      dstMat.at<unsigned short>(y, x*num_channels + c) = cv::saturate_cast<unsigned short>(value);
+      break;
+    case 3:
+      dstMat.at<short>(y, x*num_channels + c) = cv::saturate_cast<short>(value);
+      break;
+  }
 }
 
 //--------------------------------------------------
@@ -90,93 +183,15 @@ void utils::applyFilter(cv::InputArray src,
   for (int y = 0; y < src.rows(); y++)
     for (int x = 0; x < src.cols(); x++)
         for(int c = 0; c < src.channels(); c++){
-          long value; 
-          switch(kernel_depth){
-            case 0:
-              switch(src_depth){
-                case 0:
-                  value = applyMask_INT<uchar, uchar>(src, kernel, anchor, x, y, c);
-                  break;
-                case 1:
-                  value = applyMask_INT<uchar, char>(src, kernel, anchor, x, y, c);
-                  break;
-                case 2:
-                  value = applyMask_INT<uchar, unsigned short>(src, kernel, anchor, x, y, c);
-                  break;
-                case 3:
-                  value = applyMask_INT<uchar, short>(src, kernel, anchor, x, y, c);
-                  break;
-                }
-                break;
-
-            case 1:
-              switch(src_depth){
-                case 0:
-                  value = applyMask_INT<char, uchar>(src, kernel, anchor, x, y, c);
-                  break;
-                case 1:
-                  value = applyMask_INT<char, char>(src, kernel, anchor, x, y, c);
-                  break;
-                case 2:
-                  value = applyMask_INT<char, unsigned short>(src, kernel, anchor, x, y, c);
-                  break;
-                case 3:
-                  value = applyMask_INT<char, short>(src, kernel, anchor, x, y, c);
-                  break;
-                }
-                break;
-
-            case 2:
-              switch(src_depth){
-                case 0:
-                  value = applyMask_INT<unsigned short, uchar>(src, kernel, anchor, x, y, c);
-                  break;
-                case 1:
-                  value = applyMask_INT<unsigned short, char>(src, kernel, anchor, x, y, c);
-                  break;
-                case 2:
-                  value = applyMask_INT<unsigned short, unsigned short>(src, kernel, anchor, x, y, c);
-                  break;
-                case 3:
-                  value = applyMask_INT<unsigned short, short>(src, kernel, anchor, x, y, c);
-                  break;
-                }
-
-            case 3:
-              switch(src_depth){
-                case 0:
-                  value = applyMask_INT<short, uchar>(src, kernel, anchor, x, y, c);
-                  break;
-                case 1:
-                  value = applyMask_INT<short, char>(src, kernel, anchor, x, y, c);
-                  break;
-                case 2:
-                  value = applyMask_INT<short, unsigned short>(src, kernel, anchor, x, y, c);
-                  break;
-                case 3:
-                  value = applyMask_INT<short, short>(src, kernel, anchor, x, y, c);
-                  break;
-                }
-                break;
-          }
-          // Casting for no overflow
-          switch(ddepth){
-            case 0:
-              dstMat.at<uchar>(y, x*num_channels + c) = cv::saturate_cast<uchar>(value);
-              break;
-            case 1:
-              dstMat.at<char>(y, x*num_channels + c) = cv::saturate_cast<char>(value);
-              break;
-            case 2:
-              dstMat.at<unsigned short>(y, x*num_channels + c) = cv::saturate_cast<unsigned short>(value);
-              break;
-            case 3:
-              dstMat.at<short>(y, x*num_channels + c) = cv::saturate_cast<short>(value);
-              break;
-          }
+          if(ddepth < 4)
+            applyMaskIntWarper(dstMat, src, kernel, 
+                ddepth, y, x, c, anchor);
         } 
 }
 
+//-------------------------------------------------------
+// Sobel part
+//-------------------------------------------------------
 void utils::createSobelFilter(cv::OutputArray kernel, uchar angle, int depth){
   kernel.create(3, 3, depth);
   std::array<int, 9> data;
@@ -233,6 +248,4 @@ void utils::detectBySobel(cv::InputArray src, cv::OutputArray dst, cv::OutputArr
 
   getL2(grad_x, grad_y, dst);
 }
-
-  
 
