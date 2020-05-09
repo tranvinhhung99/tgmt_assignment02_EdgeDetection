@@ -172,6 +172,26 @@ TEST(Sobel, detectEdge){
 
 }
 
+
+TEST(Sobel, detectEdge_nonRandom){
+  int random_data[] = {30, 2 , 40, 12, 49,
+                     50, 40, 13, 48, 23,
+                     21, 22, 22, 23, 28,
+                     21, 27, 34, 56, 57};
+
+  cv::Mat random_mat(5, 4, CV_8U, &random_data);
+
+  cv::Mat my_grad_x, my_grad_y, my_edge;
+  utils::detectBySobel(random_mat, my_edge, my_grad_x, my_grad_y);
+
+  cv::Mat cv_grad_x, cv_grad_y;
+  cv::Sobel(random_mat, cv_grad_x, CV_16S, 1, 0, 3, 1, 0, BORDER_CONSTANT);
+  cv::Sobel(random_mat, cv_grad_y, CV_16S, 0, 1, 3, 1, 0, BORDER_CONSTANT);
+
+  test_case::testSameMatrix(cv_grad_x, my_grad_x);
+  test_case::testSameMatrix(cv_grad_y, my_grad_y);
+
+}
 // Gaussian test case
 TEST(Gaussian, outputDepth){
   cv::Mat random_mat;
@@ -189,6 +209,20 @@ TEST(Gaussian, outputDepth){
   utils::applyGaussianFilter(random_mat, out2, 5, -1, CV_16U);
   CV_Assert(out2.depth() == CV_16U);
 
+}
+
+TEST(Gaussian, randomMat){
+  cv::Mat random_mat;
+  test_case::generateRandomMatrix(random_mat, 10, 10, CV_8U);
+
+  cv::Mat out0;
+  utils::applyGaussianFilter(random_mat, out0, 3, -1, CV_8U);
+
+  cv::Mat cv_out;
+  cv::GaussianBlur(random_mat, cv_out, cv::Size(3, 3), 0, 0, BORDER_CONSTANT);
+
+  test_case::testSameMatrix(cv_out, out0);
 
 
 }
+
