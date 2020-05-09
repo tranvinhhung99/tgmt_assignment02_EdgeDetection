@@ -1,7 +1,7 @@
 #ifndef CANNY_H_
 #define CANNY_H_
 
-#include <opencv/core.hpp>
+#include <opencv2/core.hpp>
 
 namespace utils{
   /* Canny edge detection method
