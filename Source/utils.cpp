@@ -4,6 +4,7 @@
 #include <array>
 
 #include <math.h>
+#include <opencv2/core.hpp>
 
 //--------------------------------------------------------------------
 // Template helper function section
@@ -422,17 +423,32 @@ void createGaussianFilter(cv::OutputArray kernel, uchar ksize, int type, double 
   int y0, x0;
   x0 = y0 = ksize / 2;
 
+  double sum = 0;
   // Get value
-  if(type == CV_32F)
+  if(type == CV_32F){
     for(int y = 0; y < kernel.rows(); y++)
       for(int x = 0; x < kernel.cols(); x++){
-        kernel_mat.at<float>(y, x) = gaussFunction(x, y, sigma, x0, y0);
+        double value = gaussFunction(x, y, sigma, x0, y0);
+        kernel_mat.at<float>(y, x) = value;
+        sum += value;
       }
-  else if(type == CV_64F)
     for(int y = 0; y < kernel.rows(); y++)
       for(int x = 0; x < kernel.cols(); x++){
-        kernel_mat.at<double>(y, x) = gaussFunction(x, y, sigma, x0, y0);
+        kernel_mat.at<float>(y, x) /= sum;
       }
+    }
+  else if(type == CV_64F){
+    for(int y = 0; y < kernel.rows(); y++)
+      for(int x = 0; x < kernel.cols(); x++){
+        double value = gaussFunction(x, y, sigma, x0, y0);
+        kernel_mat.at<double>(y, x) = value;
+        sum += value;
+      }
+    for(int y = 0; y < kernel.rows(); y++)
+      for(int x = 0; x < kernel.cols(); x++){
+        kernel_mat.at<double>(y, x) /= sum;
+      }
+  }
 }
 
 void utils::applyGaussianFilter(cv::InputArray src,
@@ -443,12 +459,12 @@ void utils::applyGaussianFilter(cv::InputArray src,
 ){
 
   cv::Mat kernel;
-  createGaussianFilter(kernel, ksize, CV_32F, sigma);
+  createGaussianFilter(kernel, ksize, CV_64F, sigma);
 
   cv::Mat temp_dst;
-  applyFilter(src, temp_dst, CV_32F, kernel);
+  applyFilter(src, temp_dst, CV_64F, kernel);
 
-  if(ddepth != CV_32F)
+  if(ddepth != CV_64F)
     temp_dst.convertTo(temp_dst, ddepth);
   dst.assign(temp_dst);
 }
