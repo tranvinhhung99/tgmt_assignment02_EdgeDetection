@@ -40,33 +40,34 @@ void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::
     for (int col = 0, value; col < theta.cols(); ++col)
         for (int row = 0; row < theta.rows(); ++row)
         {
-            x = getValueFromMat_<T>(gradient_x, row, col);
-            y = getValueFromMat_<T>(gradient_y, row, col);
+            x = getValueFromMat_<T>(gradient_x, col, row);
+            y = getValueFromMat_<T>(gradient_y, col, row);
 
             value = atan2(y, x) * 180 / PI;
 
             while (value < 0) value += 180;
             while (value >= 180)  value -= 180;
 
+
             if (value <= 22.5 || value > 157.5)
             {// group of angle 0
                 theta.getMat().at<T>(row, col) = 0;
             }
             else
-            if (value <= 67.5 && value > 22.5)
-            {// group of angle 45
-                theta.getMat().at<T>(row, col) = 45;
-            }
-            else
-            if (value <= 112.5 && value > 67.5)
-            {// group of angle 90
-                theta.getMat().at<T>(row, col) = 90;
-            }
-            else
-            if (value <= 157.5 && value > 112.5)
-            {// group of angle 135
-                theta.getMat().at<T>(row, col) = 135;
-            }
+                if (value <= 67.5 && value > 22.5)
+                {// group of angle 45
+                    theta.getMat().at<T>(row, col) = 45;
+                }
+                else
+                    if (value <= 112.5 && value > 67.5)
+                    {// group of angle 90
+                        theta.getMat().at<T>(row, col) = 90;
+                    }
+                    else
+                        if (value <= 157.5 && value > 112.5)
+                        {// group of angle 135
+                            theta.getMat().at<T>(row, col) = 135;
+                        }
         }
 }
 
@@ -86,7 +87,7 @@ T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle)
         break;
     case 90:
         neighbor1 = getValueFromMat_<T>(intensity, col, row - 1);
-        neighbor2 = getValueFromMat_<T>(intensity, col , row + 1);
+        neighbor2 = getValueFromMat_<T>(intensity, col, row + 1);
         break;
     case 135:
         neighbor1 = getValueFromMat_<T>(intensity, col - 1, row + 1);
@@ -94,7 +95,7 @@ T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle)
     }
 
     return (intensity.getMat().at<T>(row, col) < neighbor1
-        || intensity.getMat().at<T>(row, col) < neighbor2)? 0 : intensity.getMat().at<T>(row, col);
+        || intensity.getMat().at<T>(row, col) < neighbor2) ? 0 : intensity.getMat().at<T>(row, col);
 }
 
 
@@ -161,7 +162,7 @@ template <typename T>
 void hysteresis(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray dst, int low_thres, int high_thres)
 {
     std::queue <cv::Point> queue_point;
-    
+
     dst.create(intensity.size(), intensity.type());
     cv::Mat temp(intensity.size(), intensity.type(), cv::Scalar::all(0));
     dst.assign(temp);
@@ -195,11 +196,12 @@ void utils::detectByCanny(cv::InputArray src, cv::OutputArray dst, int low_thres
     cv::Mat gradient_x, gradient_y;
     cv::Mat intensity;
 
-    gradientComputation<uchar>(smoothImage, intensity, gradient_x, gradient_y); // uchar
+    gradientComputation<uchar>(smoothImage, intensity, gradient_x, gradient_y);
 
     // Edge direction computation
     cv::Mat theta;
     getEdgeDirection<int16_t>(gradient_x, gradient_y, theta);
+
 
     theta.convertTo(theta, CV_8U);
     intensity.convertTo(intensity, CV_8U);
