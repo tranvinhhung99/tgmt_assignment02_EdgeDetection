@@ -9,9 +9,9 @@
 bool isValidPoint(cv::InputArray input, cv::Point p)
 {
     if (p.x < 0 || p.x >= input.cols())
-        return 0;
+        return false;
     if (p.y < 0 || p.y >= input.rows())
-        return 0;
+        return false;
     return true;
 }
 
@@ -34,7 +34,6 @@ void gradientComputation(cv::InputArray src, cv::OutputArray dst, cv::OutputArra
 template <typename T>
 void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::OutputArray theta)
 {
-    //cv::phase(gradient_x, gradient_y, theta, true); // angle In Degrees
     theta.create(gradient_x.getMat().size(), gradient_x.getMat().type());
 
     T x, y;
@@ -43,10 +42,11 @@ void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::
         {
             x = getValueFromMat_<T>(gradient_x, row, col);
             y = getValueFromMat_<T>(gradient_y, row, col);
-            value = atan2(y,  x) * 180 / PI;
+
+            value = atan2(y, x) * 180 / PI;
 
             while (value < 0) value += 180;
-            if (value >= 180)  value = value % 180;
+            while (value >= 180)  value -= 180;
 
             if (value <= 22.5 || value > 157.5)
             {// group of angle 0
@@ -67,10 +67,6 @@ void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::
             {// group of angle 135
                 theta.getMat().at<T>(row, col) = 135;
             }
-            else
-            {
-                printf("What's wrong in getEdgeDirection!!!\n");
-            }
         }
 }
 
@@ -85,21 +81,22 @@ T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle)
         neighbor2 = getValueFromMat_<T>(intensity, col + 1, row);
         break;
     case 45:
-        neighbor1 = getValueFromMat_<T>(intensity, col - 1, row + 1);
-        neighbor2 = getValueFromMat_<T>(intensity, col + 1, row - 1);
+        neighbor1 = getValueFromMat_<T>(intensity, col - 1, row - 1);
+        neighbor2 = getValueFromMat_<T>(intensity, col + 1, row + 1);
         break;
     case 90:
         neighbor1 = getValueFromMat_<T>(intensity, col, row - 1);
         neighbor2 = getValueFromMat_<T>(intensity, col , row + 1);
         break;
     case 135:
-        neighbor1 = getValueFromMat_<T>(intensity, col - 1, row - 1);
-        neighbor2 = getValueFromMat_<T>(intensity, col + 1, row + 1);
+        neighbor1 = getValueFromMat_<T>(intensity, col - 1, row + 1);
+        neighbor2 = getValueFromMat_<T>(intensity, col + 1, row - 1);
     }
 
     return (intensity.getMat().at<T>(row, col) < neighbor1
         || intensity.getMat().at<T>(row, col) < neighbor2)? 0 : intensity.getMat().at<T>(row, col);
 }
+
 
 template <typename T>
 void nonMaximumSuppression(cv::InputArray theta, cv::OutputArray intensity)
@@ -124,7 +121,6 @@ void linkEdge(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray ds
         row = current_point.y;
         col = current_point.x;
 
-
         switch (theta.getMat().at<T>(row, col))
         {
         case 0:
@@ -132,26 +128,26 @@ void linkEdge(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray ds
             neighbor2 = cv::Point(col, row + 1);
             break;
         case 45:
-            neighbor1 = cv::Point(col - 1, row - 1);
-            neighbor2 = cv::Point(col + 1, row + 1);
+            neighbor1 = cv::Point(col - 1, row + 1);
+            neighbor2 = cv::Point(col + 1, row - 1);
             break;
         case 90:
             neighbor1 = cv::Point(col - 1, row);
             neighbor2 = cv::Point(col + 1, row);
             break;
         case 135:
-            neighbor1 = cv::Point(col - 1, row + 1);
-            neighbor2 = cv::Point(col + 1, row - 1);
+            neighbor1 = cv::Point(col - 1, row - 1);
+            neighbor2 = cv::Point(col + 1, row + 1);
         }
 
         // link point
-        if (isValidPoint(dst, neighbor1) && dst.getMat().at<T>(neighbor1.y, neighbor1.x) == 0 
+        if (isValidPoint(dst, neighbor1) && dst.getMat().at<T>(neighbor1.y, neighbor1.x) == 0
             && getValueFromMat_<T>(intensity, neighbor1.x, neighbor1.y) >= low_thres)
         {
             dst.getMat().at<T>(neighbor1.y, neighbor1.x) = 255;
             queue->push(neighbor1);
         }
-        if (isValidPoint(dst, neighbor2) && dst.getMat().at<T>(neighbor2.y, neighbor2.x) == 0 
+        if (isValidPoint(dst, neighbor2) && dst.getMat().at<T>(neighbor2.y, neighbor2.x) == 0
             && getValueFromMat_<T>(intensity, neighbor2.x, neighbor2.y) >= low_thres)
         {
             dst.getMat().at<T>(neighbor2.y, neighbor2.x) = 255;
@@ -159,6 +155,8 @@ void linkEdge(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray ds
         }
     }
 }
+
+
 template <typename T>
 void hysteresis(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray dst, int low_thres, int high_thres)
 {
@@ -186,36 +184,28 @@ void hysteresis(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray 
 */
 void utils::detectByCanny(cv::InputArray src, cv::OutputArray dst, int low_thres, int high_thres)
 {
-    printf("Hello World!\n");
-
     cv::Mat src_input = src.getMat();
     src_input.convertTo(src_input, CV_8U);
 
     // Image smoothing
     cv::Mat smoothImage;
     utils::applyGaussianFilter(src_input, smoothImage, 3); // can change kernel_size
-    //cv::imshow("applyGaussianFilter", smoothImage); // debug
-
 
     // Gradient computation
     cv::Mat gradient_x, gradient_y;
     cv::Mat intensity;
-    gradientComputation<uchar>(smoothImage, intensity, gradient_x, gradient_y);
-    //cv::imshow("gradient_x", gradient_x); // debug
-    //cv::imshow("gradient_y", gradient_y); // debug
+
+    gradientComputation<uchar>(smoothImage, intensity, gradient_x, gradient_y); // uchar
 
     // Edge direction computation
     cv::Mat theta;
     getEdgeDirection<int16_t>(gradient_x, gradient_y, theta);
-    
+
     theta.convertTo(theta, CV_8U);
-    cv::imshow("theta", theta); // debug
     intensity.convertTo(intensity, CV_8U);
-    cv::imshow("intensity", intensity); // debug
 
     // Non-maximum suppresion
     nonMaximumSuppression<uchar>(theta, intensity);
-    cv::imshow("intensity", intensity); // debug
 
     // Hysteresis
     hysteresis<uchar>(intensity, theta, dst, low_thres, high_thres);
