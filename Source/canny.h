@@ -7,7 +7,7 @@ namespace utils{
   /* Canny edge detection method
    * 
    * @param src: Input Array. Should be CV_8U
-   * @param dst: Output Array. Will be CV_16S
+   * @param dst: Output Array. Will be CV_8U
    * @param low_thres: Low Threshold
    * @param high_thres: High Threshold
    *
