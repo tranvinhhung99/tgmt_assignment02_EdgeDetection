@@ -6,6 +6,12 @@
 
 #define PI 3.14159265
 
+/*
+----------------------TEMPLATE HELPER FUNCTION SECTION------------------------------
+*/
+
+
+/* Check if Point p is a valid point in matrix input */
 bool isValidPoint(cv::InputArray input, cv::Point p)
 {
     if (p.x < 0 || p.x >= input.cols())
@@ -15,22 +21,29 @@ bool isValidPoint(cv::InputArray input, cv::Point p)
     return true;
 }
 
+/* get  value of input[row, col]  */
 template <typename T>
-inline T getValueFromMat_(cv::InputArray input, int x, int y) {
-    if (x < 0 || x >= input.cols())
+inline T getValueFromMat_(cv::InputArray input, int col, int row) {
+    if (col < 0 || col >= input.cols())
         return 0;
-    if (y < 0 || y >= input.rows())
+    if (row < 0 || row >= input.rows())
         return 0;
 
-    return input.getMat().at<T>(y, x);
+    return input.getMat().at<T>(row, col);
 }
 
+/* calc gradient of src, output is x-gradient, y-gradient and dst as gradient magnitude */
+/* input src: must be CV_8U */
+/* output dst, gradient_x, gradient_y: will be CV_16S */
 template <typename T>
 void gradientComputation(cv::InputArray src, cv::OutputArray dst, cv::OutputArray gradient_x, cv::OutputArray gradient_y)
 {
     utils::detectBySobel(src, dst, gradient_x, gradient_y);
 }
 
+/* calc gradient orientation from x-gradient, y-gradient */
+/* input: gradient_x, gradient_y: must be CV_16S */
+/* output: theta: will be CV_16S */
 template <typename T>
 void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::OutputArray theta)
 {
@@ -71,6 +84,7 @@ void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::
         }
 }
 
+/* help function of nonMaximumSuppression function */
 template <typename T>
 T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle)
 {
@@ -94,11 +108,12 @@ T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle)
         neighbor2 = getValueFromMat_<T>(intensity, col + 1, row - 1);
     }
 
+    // intensity[row, col] be maintained or get 0-value whether it is maxima by orientation or not
     return (intensity.getMat().at<T>(row, col) < neighbor1
         || intensity.getMat().at<T>(row, col) < neighbor2) ? 0 : intensity.getMat().at<T>(row, col);
 }
 
-
+/* get theta and intensity, output is intensity after suppressing non-maxima */
 template <typename T>
 void nonMaximumSuppression(cv::InputArray theta, cv::OutputArray intensity)
 {
@@ -109,6 +124,7 @@ void nonMaximumSuppression(cv::InputArray theta, cv::OutputArray intensity)
         }
 }
 
+/* help function of hysteresis function */
 template <typename T>
 void linkEdge(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray dst, std::queue <cv::Point>* queue, int low_thres)
 {
@@ -157,7 +173,7 @@ void linkEdge(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray ds
     }
 }
 
-
+/* Link the pixels of the edge together */
 template <typename T>
 void hysteresis(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray dst, int low_thres, int high_thres)
 {
