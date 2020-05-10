@@ -48,15 +48,18 @@ int main(int argc, const char** argv){
     cv::Mat edge, grad_x, grad_y;
     utils::detectBySobel(img, edge, grad_x, grad_y);
 
+    edge.convertTo(edge, CV_8U);
     cv::imshow("Edge by Sobel", edge);
 
     bool flag = argc == 3;
 
     if(!flag)
-      flag = argv[3][0] == '1';
+      flag = argv[3][0] == '0';
 
-    if(flag){
+    if(!flag){
+      grad_x.convertTo(grad_x, CV_8U);
       cv::imshow("Grad X", grad_x);
+      grad_y.convertTo(grad_y, CV_8U);
       cv::imshow("Grad y", grad_y);
     }
   }
@@ -64,15 +67,18 @@ int main(int argc, const char** argv){
     cv::Mat edge, grad_x, grad_y;
     utils::detectBySobel(img, edge, grad_x, grad_y);
 
+    edge.convertTo(edge, CV_8U);
     cv::imshow("Edge by Prewitt", edge);
 
     bool flag = argc == 3;
 
     if(!flag)
-      flag = argv[3][0] == '1';
+      flag = argv[3][0] == '0';
 
-    if(flag){
+    if(!flag){
+      grad_x.convertTo(grad_x, CV_8U);
       cv::imshow("Grad X", grad_x);
+      grad_y.convertTo(grad_y, CV_8U);
       cv::imshow("Grad y", grad_y);
     }
   }
@@ -80,6 +86,7 @@ int main(int argc, const char** argv){
     cv::Mat edge;
     utils::detectByLaplace(img, edge);
 
+    edge.convertTo(edge, CV_8U);
     cv::imshow("Edge by Laplace", edge);
 
   }
@@ -91,6 +98,7 @@ int main(int argc, const char** argv){
     if(argc >= 5)
       high_thres = atoi(argv[4]);
     utils::detectByCanny(img, edge, low_thres, high_thres);
+    edge.convertTo(edge, CV_8U);
     cv::imshow("Edge by Canny", edge);
   }
   else{
@@ -98,5 +106,7 @@ int main(int argc, const char** argv){
     printHelp();
     return 1;
   }
+  std::cout << "Press any key to end" << std::endl;
+  cv::waitKey(0);
   return 0;
 }
