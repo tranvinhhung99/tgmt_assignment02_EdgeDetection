@@ -1,58 +1,99 @@
 #include "utils.h"
+#include "canny.h"
 
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <string.h>
+
 const int BORDER_CONSTANT = 0;
 
+// Show help prompt
+void printHelp(){
+  std::cout << "Edge Detection program" << std::endl
+    << "Usage: <program_name> <image_path> <command_id> <extra_params>" << std::endl
+    << "  " << "program_name: Name of this program" << std::endl
+    << "  " << "image_path: Path to image need to detect edge" << std::endl
+    << "  " << "command_id: SOBEL, PREWITT, LAPLACE, CANNY" << std::endl
+    << "  " << "SOBEL and PREWITT extra params: 0 or 1 (default: 0).1: Show grad_x and grad_y" << std::endl
+    << "  " << "LAPLACE extra params: currently none" << std::endl
+    << "  " << "CANNY extra params: " << std::endl
+    << "  " << "      - low_thres: Low threshold (default:100)" << std::endl
+    << "  " << "      - high_thres: High threshold (default:200)" << std::endl
+    << std::endl;
 
-void fill_array(int *a, int length, int fill_value){
-  for (int i = 0; i < length; i++)
-    a[i] = fill_value;
 }
-  
+
 
 int main(int argc, const char** argv){
-  //int input_data[9];
-  //fill_array(input_data, 9, 0);
+  if(argc < 3 || argc > 5){
+    printHelp();
+    return 0;
+  }
 
-  //int kernel_data[9];
-  //fill_array(kernel_data, 9, 1);
-
-  //cv::Mat src(3, 3, CV_8UC1, input_data);
-  //cv::Mat kernel(3, 3, CV_8UC1, kernel_data);
-
-  //cv::Mat out;
-  //utils::applyFilter(src, out, -1, kernel);
-  //std::cout << out << std::endl;
-  
+  //Try read image
   cv::Mat img;
   img = cv::imread(argv[1]);
-  cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
-  utils::applyGaussianFilter(img, img, 3);
+  if(img.empty()){
+    std::cout << "[ERROR]: Cannot open" << argv[1] << std::endl;
+    return 1;
+  }
 
-  cv::Mat edge, grad_x, grad_y;
-  utils::detectBySobel(img, edge, grad_x, grad_y);
+  if(img.channels() > 1)
+    cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
 
-  cv::imwrite("sample_output/grad_x.jpg", grad_x);
-  cv::imwrite("sample_output/grad_y.jpg", grad_y);
-  cv::imwrite("sample_output/edge.jpg", edge);
+  if(strcmp(argv[2], "SOBEL") == 0){
+    cv::Mat edge, grad_x, grad_y;
+    utils::detectBySobel(img, edge, grad_x, grad_y);
 
-  cv::Mat cv_grad_x, cv_grad_y;
-  cv::Sobel(img, cv_grad_x, CV_16S, 1, 0, 3, 1, 0, BORDER_CONSTANT);
-  cv::Sobel(img, cv_grad_y, CV_16S, 0, 1, 3, 1, 0, BORDER_CONSTANT);
-  cv::imwrite("sample_output/cv_grad_x.jpg", cv_grad_x);
-  cv::imwrite("sample_output/cv_grad_y.jpg", cv_grad_y);
+    cv::imshow("Edge by Sobel", edge);
 
-  cv::Mat abs_grad_x, abs_grad_y;
-  cv::convertScaleAbs( grad_x, abs_grad_x );
-  cv::convertScaleAbs( grad_y, abs_grad_y );
-  cv::Mat grad;
-  cv::addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad );
+    bool flag = argc == 3;
 
-  cv::imwrite("sample_output/edge_abs.jpg", grad);
+    if(!flag)
+      flag = argv[3][0] == '1';
+
+    if(flag){
+      cv::imshow("Grad X", grad_x);
+      cv::imshow("Grad y", grad_y);
+    }
+  }
+  else if(strcmp(argv[2], "PREWITT") == 0){
+    cv::Mat edge, grad_x, grad_y;
+    utils::detectBySobel(img, edge, grad_x, grad_y);
+
+    cv::imshow("Edge by Prewitt", edge);
+
+    bool flag = argc == 3;
+
+    if(!flag)
+      flag = argv[3][0] == '1';
+
+    if(flag){
+      cv::imshow("Grad X", grad_x);
+      cv::imshow("Grad y", grad_y);
+    }
+  }
+  else if(strcmp(argv[2], "LAPLACE") == 0){
+    cv::Mat edge;
+    utils::detectByLaplace(img, edge);
+
+    cv::imshow("Edge by Laplace", edge);
+
+  }
+  else if(strcmp(argv[2], "CANNY") == 0){
+    cv::Mat edge;
+    int low_thres = 100, high_thres = 200;
+    if(argc >= 4)
+      low_thres = atoi(argv[3]);
+    if(argc >= 5)
+      high_thres = atoi(argv[4]);
+    utils::detectByCanny(img, edge, low_thres, high_thres);
+    cv::imshow("Edge by Canny", edge);
+  }
+
 
 
 }
