@@ -173,6 +173,12 @@ void applyMaskFloatWarper(cv::Mat dstMat, cv::InputArray src,
         case 3:
           value = applyMask_INT<uchar, short>(src, kernel, anchor, x, y, c);
           break;
+        case CV_32F:
+          value = applyMask_FLOAT<uchar, float>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_64F:
+          value = applyMask_FLOAT<uchar, double>(src, kernel, anchor, x, y, c);
+          break;
         }
         break;
 
@@ -190,6 +196,12 @@ void applyMaskFloatWarper(cv::Mat dstMat, cv::InputArray src,
         case 3:
           value = applyMask_INT<char, short>(src, kernel, anchor, x, y, c);
           break;
+        case CV_32F:
+          value = applyMask_FLOAT<char, float>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_64F:
+          value = applyMask_FLOAT<char, double>(src, kernel, anchor, x, y, c);
+          break;
         }
         break;
 
@@ -206,6 +218,12 @@ void applyMaskFloatWarper(cv::Mat dstMat, cv::InputArray src,
           break;
         case 3:
           value = applyMask_INT<unsigned short, short>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_32F:
+          value = applyMask_FLOAT<ushort, float>(src, kernel, anchor, x, y, c);
+          break;
+        case CV_64F:
+          value = applyMask_FLOAT<ushort, double>(src, kernel, anchor, x, y, c);
           break;
         }
 
@@ -307,10 +325,10 @@ void utils::applyFilter(cv::InputArray src,
     ddepth = src.depth();
 
   if (anchor.x == -1)
-    anchor.x = kernel.rows() / 2;
+    anchor.x = kernel.cols() / 2;
 
   if (anchor.y == -1)
-    anchor.y = kernel.cols() / 2;
+    anchor.y = kernel.rows() / 2;
 
   // Init destination 
   int num_channels = src.channels();
@@ -399,6 +417,7 @@ void utils::detectBySobel(cv::InputArray src, cv::OutputArray dst, cv::OutputArr
 //------------------------------------
 // Gaussian filter
 //------------------------------------
+const double PI = 3.141592653589793238;
 double gaussFunction(int x, int y, double sigma, int x0, int y0){
   double temp_x = (x - x0) / sigma;
   temp_x = (temp_x / 2) * temp_x;
@@ -406,7 +425,7 @@ double gaussFunction(int x, int y, double sigma, int x0, int y0){
   double temp_y = (y - y0) / sigma;
   temp_y = (temp_y / 2) * temp_y;
 
-  return exp(-temp_x - temp_y);
+  return exp(-temp_x - temp_y) / (2 * sigma * PI);
 
 }
 void createGaussianFilter(cv::OutputArray kernel, uchar ksize, int type=CV_32F, double sigma=-1);
@@ -451,6 +470,38 @@ void createGaussianFilter(cv::OutputArray kernel, uchar ksize, int type, double 
   }
 }
 
+// Faster implementation when kernal size is 3 or 5
+void createGaussianFilter1d(cv::OutputArray kernel, uchar ksize, int& normalize_value, bool is_row){
+  cv::Size kernel_size;
+  if(is_row)
+    kernel_size = cv::Size(ksize, 1);
+  else
+    kernel_size = cv::Size(1, ksize);
+  kernel.create(kernel_size, CV_8U);
+  cv::Mat kernel_mat = kernel.getMat();
+
+
+  switch(ksize){
+    case 3:
+      normalize_value = 4;
+      kernel_mat.at<uchar>(0) = 1;
+      kernel_mat.at<uchar>(1) = 2;
+      kernel_mat.at<uchar>(2) = 1;
+      break;
+    case 5:
+      normalize_value = 16;
+      kernel_mat.at<uchar>(0) = 1;
+      kernel_mat.at<uchar>(1) = 4;
+      kernel_mat.at<uchar>(2) = 6;
+      kernel_mat.at<uchar>(3) = 4;
+      kernel_mat.at<uchar>(4) = 1;
+      break;
+  }
+
+  
+}
+
+
 void utils::applyGaussianFilter(cv::InputArray src,
     cv::OutputArray dst,
     uchar ksize,
@@ -458,13 +509,98 @@ void utils::applyGaussianFilter(cv::InputArray src,
     int ddepth
 ){
 
-  cv::Mat kernel;
-  createGaussianFilter(kernel, ksize, CV_64F, sigma);
+  cv::Mat kernel, temp_dst;
+  int type = CV_64F;
+  if(ksize > 5 || sigma > 0){
+    createGaussianFilter(kernel, ksize, type, sigma);
+    applyFilter(src, temp_dst, type, kernel);
+  }
+  else{
+    int normalize_value;
+    type = CV_8U;
 
-  cv::Mat temp_dst;
-  applyFilter(src, temp_dst, CV_64F, kernel);
+    // Apply kernel filter for row
+    cv::Mat kernel_row, kernel_col;
+    createGaussianFilter1d(kernel_row, ksize, normalize_value, /*is_row=*/true);
+    cv::Mat temp_dst1;
+    applyFilter(src, temp_dst1, CV_16U, kernel_row);
 
-  if(ddepth != CV_64F)
+    // Apply kernel filter for col
+    createGaussianFilter1d(kernel_col, ksize, normalize_value, /*is_row=*/false);
+    applyFilter(temp_dst1, temp_dst, CV_16U, kernel_col);
+    temp_dst /= normalize_value * normalize_value;
+
+    type = CV_64F;
+  }
+
+  if(ddepth != type)
     temp_dst.convertTo(temp_dst, ddepth);
   dst.assign(temp_dst);
 }
+
+
+//-------------------------------------------------------------
+// Prewitt filter
+//-------------------------------------------------------------
+void utils::createPrewittFilter(cv::OutputArray kernel, uchar angle, int depth){
+  kernel.create(3, 3, depth);
+  std::array<int, 9> data;
+  switch(angle){
+    case 90: //grad_y
+      data = {-1, -1, -1,
+              0, 0, 0,
+              1, 1, 1};
+      break;
+    case 0: //grad_x
+      data = {-1, 0, 1,
+              -1, 0, 1,
+              -1, 0, 1};
+      break;
+    case 45:
+      data = {-1, -1, 0,
+              -1, 0,  1,
+               0, 1,  1};
+      break;
+    case 135:
+      data = { 0, -1, -1,
+               1,  0, -1,
+               1,  1,  0};
+      break;
+  }
+  for(int y = 0; y < kernel.rows(); y++)
+    for(int x = 0; x < kernel.cols(); x++)
+      switch(depth){
+        case CV_8S:
+          kernel.getMat().at<char>(y, x) = data[y*3 + x];
+        case CV_16S:
+          kernel.getMat().at<short>(y, x) = data[y*3 + x];
+          break;
+        case CV_32F:
+          kernel.getMat().at<float>(y, x) = data[y*3 + x];
+          break;
+        case CV_64F:
+          kernel.getMat().at<double>(y, x) = data[y*3 + x];
+          break;
+      }
+}
+
+void utils::detectByPrewitt(cv::InputArray src, cv::OutputArray dst, cv::OutputArray grad_x, cv::OutputArray grad_y){
+  CV_Assert(src.type() == CV_8U);
+  dst.createSameSize(src, CV_16S);
+
+  // Create filter
+  cv::Mat kernel_grad_x, kernel_grad_y;
+  createPrewittFilter(kernel_grad_x, 0);
+  createPrewittFilter(kernel_grad_y, 90);
+
+  // Apply filter
+  //cv::Mat grad_x, grad_y;
+  applyFilter(src, grad_x, CV_16S, kernel_grad_x);
+  applyFilter(src, grad_y, CV_16S, kernel_grad_y);
+
+  getL2(grad_x, grad_y, dst);
+}
+
+//-------------------------------
+// Laplace filter
+//------------------------------
