@@ -91,11 +91,9 @@ namespace utils{
    *
    * @param src: Input image, must be in CV_8U
    * @param dst: Output Image, will output in CV_16S
-   * @param grad_x: Output gradient on axis x
-   * @param grad_y: Output gradient on axis y
    *
    */
-  void detectByLaplace(cv::InputArray src, cv::OutputArray dst, cv::OutputArray grad_x, cv::OutputArray grad_y);
+  void detectByLaplace(cv::InputArray src, cv::OutputArray dst);
 };
 
 #endif //UTILS_H_

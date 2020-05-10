@@ -604,3 +604,30 @@ void utils::detectByPrewitt(cv::InputArray src, cv::OutputArray dst, cv::OutputA
 //-------------------------------
 // Laplace filter
 //------------------------------
+void createLaplaceFilter(cv::OutputArray kernel, uchar ksize){
+  kernel.create(ksize, ksize, CV_8S);
+  cv::Mat kernel_mat = kernel.getMat();
+
+  switch(ksize){
+    case 3:
+      kernel_mat.at<uchar>(2, 2) = 0;
+      kernel_mat.at<uchar>(0, 0) = 0;
+      kernel_mat.at<uchar>(0, 2) = 0;
+      kernel_mat.at<uchar>(2, 0) = 0;
+      kernel_mat.at<uchar>(1, 2) = 1;
+      kernel_mat.at<uchar>(1, 0) = 1;
+      kernel_mat.at<uchar>(0, 1) = 1;
+      kernel_mat.at<uchar>(2, 1) = 1;
+      kernel_mat.at<uchar>(1, 1) = -4;
+      return;
+      break;
+  }
+  
+}
+
+void utils::detectByLaplace(cv::InputArray src, cv::OutputArray dst){
+  cv::Mat kernel;
+  createLaplaceFilter(kernel, 3);
+  
+  applyFilter(src, dst, CV_16S, kernel);
+}
