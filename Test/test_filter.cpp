@@ -226,3 +226,20 @@ TEST(Gaussian, randomMat){
 
 }
 
+
+// No Prewitt Test because no built-in function in opencv
+
+
+// Laplace Test
+TEST(Laplace, randomMat){
+  cv::Mat random_mat;
+  test_case::generateRandomMatrix(random_mat, 10, 10, CV_8U);
+
+  cv::Mat out0;
+  utils::detectByLaplace(random_mat, out0);
+
+  cv::Mat cv_out;
+  cv::Laplacian(random_mat, cv_out, CV_16S, 1, 1, 0, BORDER_CONSTANT);
+
+  test_case::testSameMatrix(cv_out, out0);
+}
