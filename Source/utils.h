@@ -87,7 +87,7 @@ namespace utils{
    */
   void detectByPrewitt(cv::InputArray src, cv::OutputArray dst, cv::OutputArray grad_x, cv::OutputArray grad_y);
 
-  /* Detect edge by Prewitt algorithm
+  /* Detect edge by Laplace algorithm
    *
    * @param src: Input image, must be in CV_8U
    * @param dst: Output Image, will output in CV_16S
@@ -95,7 +95,7 @@ namespace utils{
    * @param grad_y: Output gradient on axis y
    *
    */
-  void detectByPrewitt(cv::InputArray src, cv::OutputArray dst, cv::OutputArray grad_x, cv::OutputArray grad_y);
+  void detectByLaplace(cv::InputArray src, cv::OutputArray dst, cv::OutputArray grad_x, cv::OutputArray grad_y);
 };
 
 #endif //UTILS_H_

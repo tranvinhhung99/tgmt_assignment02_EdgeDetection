@@ -530,7 +530,7 @@ void utils::applyGaussianFilter(cv::InputArray src,
     applyFilter(temp_dst1, temp_dst, CV_16U, kernel_col);
     temp_dst /= normalize_value * normalize_value;
 
-    type = CV_64F;
+    type = CV_16U;
   }
 
   if(ddepth != type)
