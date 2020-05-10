@@ -93,7 +93,10 @@ int main(int argc, const char** argv){
     utils::detectByCanny(img, edge, low_thres, high_thres);
     cv::imshow("Edge by Canny", edge);
   }
-
-
-
+  else{
+    std::cout << "Not support " << argv[2] << std::endl;
+    printHelp();
+    return 1;
+  }
+  return 0;
 }
