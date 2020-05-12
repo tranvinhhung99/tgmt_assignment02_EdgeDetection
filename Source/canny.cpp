@@ -218,13 +218,12 @@ void utils::detectByCanny(cv::InputArray src, cv::OutputArray dst, int low_thres
     cv::Mat theta;
     getEdgeDirection<int16_t>(gradient_x, gradient_y, theta);
 
+    // Non-maximum suppresion
+    nonMaximumSuppression<int16_t>(theta, intensity);
 
     theta.convertTo(theta, CV_8U);
     intensity.convertTo(intensity, CV_8U);
-
-    // Non-maximum suppresion
-    nonMaximumSuppression<uchar>(theta, intensity);
-
+    
     // Hysteresis
     hysteresis<uchar>(intensity, theta, dst, low_thres, high_thres);
 }
