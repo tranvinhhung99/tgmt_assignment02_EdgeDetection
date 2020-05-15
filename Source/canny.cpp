@@ -86,41 +86,49 @@ void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::
 
 /* help function of nonMaximumSuppression function */
 template <typename T>
-T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle)
+T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle, int size_kernel)
 {
-    T neighbor1, neighbor2;
-    switch (angle)
+    T neighbor1, neighbor2, max_value = intensity.getMat().at<T>(row, col);
+
+    size_kernel = (size_kernel <= 2) ? 3 : size_kernel;
+
+    for (int i = 1; i <= size_kernel/2; ++i)
     {
-    case 0:
-        neighbor1 = getValueFromMat_<T>(intensity, col - 1, row);
-        neighbor2 = getValueFromMat_<T>(intensity, col + 1, row);
-        break;
-    case 45:
-        neighbor1 = getValueFromMat_<T>(intensity, col - 1, row - 1);
-        neighbor2 = getValueFromMat_<T>(intensity, col + 1, row + 1);
-        break;
-    case 90:
-        neighbor1 = getValueFromMat_<T>(intensity, col, row - 1);
-        neighbor2 = getValueFromMat_<T>(intensity, col, row + 1);
-        break;
-    case 135:
-        neighbor1 = getValueFromMat_<T>(intensity, col - 1, row + 1);
-        neighbor2 = getValueFromMat_<T>(intensity, col + 1, row - 1);
+        switch (angle)
+        {
+        case 0:
+            neighbor1 = getValueFromMat_<T>(intensity, col - i, row);
+            neighbor2 = getValueFromMat_<T>(intensity, col + i, row);
+            break;
+        case 45:
+            neighbor1 = getValueFromMat_<T>(intensity, col - i, row - i);
+            neighbor2 = getValueFromMat_<T>(intensity, col + i, row + i);
+            break;
+        case 90:
+            neighbor1 = getValueFromMat_<T>(intensity, col, row - i);
+            neighbor2 = getValueFromMat_<T>(intensity, col, row + i);
+            break;
+        case 135:
+            neighbor1 = getValueFromMat_<T>(intensity, col - i, row + i);
+            neighbor2 = getValueFromMat_<T>(intensity, col + i, row - i);
+        }
+
+        max_value = (neighbor1 > max_value) ? neighbor1 : max_value;
+        max_value = (neighbor2 > max_value) ? neighbor2 : max_value;
     }
 
     // intensity[row, col] be maintained or get 0-value whether it is maxima by orientation or not
-    return (intensity.getMat().at<T>(row, col) < neighbor1
-        || intensity.getMat().at<T>(row, col) < neighbor2) ? 0 : intensity.getMat().at<T>(row, col);
+    return (intensity.getMat().at<T>(row, col) < max_value) ? 0 : intensity.getMat().at<T>(row, col);
 }
 
 /* get theta and intensity, output is intensity after suppressing non-maxima */
 template <typename T>
-void nonMaximumSuppression(cv::InputArray theta, cv::OutputArray intensity)
+void nonMaximumSuppression(cv::InputArray theta, cv::OutputArray intensity, int size_kernel)
 {
     for (int col = 0; col < theta.cols(); ++col)
         for (int row = 0; row < theta.rows(); ++row)
         {
-            intensity.getMat().at<T>(row, col) = suppressNonMaxima(intensity, row, col, theta.getMat().at<T>(row, col));
+            intensity.getMat().at<T>(row, col) = suppressNonMaxima(intensity, row, col, theta.getMat().at<T>(row, col), size_kernel);
         }
 }
 
@@ -199,14 +207,14 @@ void hysteresis(cv::InputArray intensity, cv::InputArray theta, cv::OutputArray 
 /*
 ----------------------MAIN FUNCTION------------------------------
 */
-void utils::detectByCanny(cv::InputArray src, cv::OutputArray dst, int low_thres, int high_thres)
+void utils::detectByCanny(cv::InputArray src, cv::OutputArray dst, int low_thres, int high_thres, int size_kernel_gauss, int size_kernel_nms)
 {
     cv::Mat src_input = src.getMat();
     src_input.convertTo(src_input, CV_8U);
 
     // Image smoothing
     cv::Mat smoothImage;
-    utils::applyGaussianFilter(src_input, smoothImage, 3); // can change kernel_size
+    utils::applyGaussianFilter(src_input, smoothImage, size_kernel_gauss); // can change kernel_size
 
     // Gradient computation
     cv::Mat gradient_x, gradient_y;
@@ -219,7 +227,7 @@ void utils::detectByCanny(cv::InputArray src, cv::OutputArray dst, int low_thres
     getEdgeDirection<int16_t>(gradient_x, gradient_y, theta);
 
     // Non-maximum suppresion
-    nonMaximumSuppression<int16_t>(theta, intensity);
+    nonMaximumSuppression<int16_t>(theta, intensity, size_kernel_nms);
 
     theta.convertTo(theta, CV_8U);
     intensity.convertTo(intensity, CV_8U);

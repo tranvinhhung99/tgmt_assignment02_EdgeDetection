@@ -20,19 +20,21 @@ void printHelp(){
     << "  " << "SOBEL and PREWITT extra params: 0 or 1 (default: 0).1: Show grad_x and grad_y" << std::endl
     << "  " << "LAPLACE extra params: currently none" << std::endl
     << "  " << "CANNY extra params: " << std::endl
-    << "  " << "      - low_thres: Low threshold (default:100)" << std::endl
-    << "  " << "      - high_thres: High threshold (default:200)" << std::endl
+    << "  " << "      - low_thres: Low threshold (default:40)" << std::endl
+    << "  " << "      - high_thres: High threshold (default:80)" << std::endl
+    << "  " << "      - kernel_size_gauss: GaussianFilter's kernel size (default:3)" << std::endl
+    << "  " << "      - kernel_size_nms: NonMaxSupression's kernel size (default:3)" << std::endl
     << std::endl;
 
 }
 
 
 int main(int argc, const char** argv){
-  if(argc < 3 || argc > 5){
+  if(argc < 3 || argc > 7){
     printHelp();
     return 0;
   }
-
+  
   //Try read image
   cv::Mat img;
   img = cv::imread(argv[1]);
@@ -40,6 +42,8 @@ int main(int argc, const char** argv){
     std::cout << "[ERROR]: Cannot open" << argv[1] << std::endl;
     return 1;
   }
+
+  cv::imshow("Original Image", img);
 
   if(img.channels() > 1)
     cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
@@ -92,12 +96,25 @@ int main(int argc, const char** argv){
   }
   else if(strcmp(argv[2], "CANNY") == 0){
     cv::Mat edge;
-    int low_thres = 100, high_thres = 200;
-    if(argc >= 4)
-      low_thres = atoi(argv[3]);
-    if(argc >= 5)
-      high_thres = atoi(argv[4]);
-    utils::detectByCanny(img, edge, low_thres, high_thres);
+    int low_thres = 40, high_thres = 80, kernel_size_gauss = 3, kernel_size_nms = 5;
+
+    switch (argc)
+    {
+    case 7:
+        kernel_size_nms = atoi(argv[6]);
+    case 6:
+        kernel_size_gauss = atoi(argv[5]);
+    case 5:
+        high_thres = atoi(argv[4]);
+    case 4:
+        low_thres = atoi(argv[3]);
+    case 3:
+        utils::detectByCanny(img, edge, low_thres, high_thres, kernel_size_gauss, kernel_size_nms);
+        break;
+    default:
+        std::cout << "Not support CANNY with " << argc - 3 << " parameters!" << std::endl;
+    }
+
     edge.convertTo(edge, CV_8U);
     cv::imshow("Edge by Canny", edge);
   }
@@ -106,7 +123,8 @@ int main(int argc, const char** argv){
     printHelp();
     return 1;
   }
-  std::cout << "Press any key to end" << std::endl;
+  //std::cout << "Press any key to end" << std::endl;
+
   cv::waitKey(0);
   return 0;
 }
