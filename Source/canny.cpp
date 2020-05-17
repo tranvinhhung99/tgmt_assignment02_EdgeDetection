@@ -56,7 +56,7 @@ void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::
             x = getValueFromMat_<T>(gradient_x, col, row);
             y = getValueFromMat_<T>(gradient_y, col, row);
 
-            value = atan2(y, x) * 180 / PI;
+            value = round(atan2(y, x) * 180 / PI);
 
             while (value < 0) value += 180;
             while (value >= 180)  value -= 180;
@@ -88,7 +88,7 @@ void getEdgeDirection(cv::InputArray gradient_x, cv::InputArray gradient_y, cv::
 template <typename T>
 T suppressNonMaxima(cv::InputArray intensity, int row, int col, T angle, int size_kernel)
 {
-    T neighbor1, neighbor2, max_value = intensity.getMat().at<T>(row, col);
+    T neighbor1 = 0, neighbor2 = 0, max_value = intensity.getMat().at<T>(row, col);
 
     size_kernel = (size_kernel <= 2) ? 3 : size_kernel;
 

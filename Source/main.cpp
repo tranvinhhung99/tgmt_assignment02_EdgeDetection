@@ -23,7 +23,7 @@ void printHelp(){
     << "  " << "      - low_thres: Low threshold (default:40)" << std::endl
     << "  " << "      - high_thres: High threshold (default:80)" << std::endl
     << "  " << "      - kernel_size_gauss: GaussianFilter's kernel size (default:3)" << std::endl
-    << "  " << "      - kernel_size_nms: NonMaxSupression's kernel size (default:3)" << std::endl
+    << "  " << "      - kernel_size_nms: NonMaxSupression's kernel size (default:5)" << std::endl
     << std::endl;
 
 }
